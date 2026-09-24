@@ -44,7 +44,7 @@
 
         public override string ToString()
         {
-            return AnswerText;
+            return Answer;
         }
 
         public object Clone()
