@@ -1,9 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ExaminationSystem
+﻿namespace ExaminationSystem
 {
+    /// <summary>
+    /// Base class for every exam type. Holds the exam's duration, its fixed-size
+    /// array of questions, and the student's recorded answers. Cannot be instantiated
+    /// directly — concrete exam types (<see cref="FinalExam"/>, <see cref="PracticalExam"/>)
+    /// derive from it and supply their own <see cref="ShowExam"/> behavior.
+    /// </summary>
     public abstract class Exam : ICloneable, IComparable
     {
         protected int _time;
@@ -11,6 +13,7 @@ namespace ExaminationSystem
         protected Question?[] _questions = Array.Empty<Question?>();
         protected int[] _studentAnswers = Array.Empty<int>();
 
+        /// <summary>Duration of the exam, in minutes. Must be greater than zero.</summary>
         public int Time
         {
             get
@@ -27,6 +30,10 @@ namespace ExaminationSystem
             }
         }
 
+        /// <summary>
+        /// The fixed number of questions this exam holds (and the size of <see cref="Questions"/>
+        /// and <see cref="StudentAnswers"/>). Must be greater than zero.
+        /// </summary>
         public int NumberOfQuestions
         {
             get
@@ -43,6 +50,7 @@ namespace ExaminationSystem
             }
         }
 
+        /// <summary>The exam's questions. Empty slots are <c>null</c> until filled via <see cref="AddQuestion"/>.</summary>
         public Question?[] Questions
         {
             get
@@ -56,6 +64,10 @@ namespace ExaminationSystem
             }
         }
 
+        /// <summary>
+        /// The student's chosen answer ID for each question, by index (parallel to <see cref="Questions"/>).
+        /// <c>0</c> means that question hasn't been answered yet.
+        /// </summary>
         public int[] StudentAnswers
         {
             get
@@ -69,22 +81,27 @@ namespace ExaminationSystem
             }
         }
 
-
+        /// <summary>
+        /// Creates an exam with the given duration and question count, allocating
+        /// empty <see cref="Questions"/> and <see cref="StudentAnswers"/> arrays.
+        /// </summary>
         public Exam(int time, int numberOfQuestions)
         {
             Time = time;
             NumberOfQuestions = numberOfQuestions;
 
-
             _questions = new Question?[NumberOfQuestions];
             _studentAnswers = new int[NumberOfQuestions];
-
         }
 
-
+        /// <summary>
+        /// Adds a <b>deep clone</b> of the given question into the first free slot.
+        /// Cloning keeps this exam's copy independent of the original question object
+        /// (and of any other exam that was built from the same question bank).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The questions array is already full.</exception>
         public virtual void AddQuestion(Question question)
         {
-
             ArgumentNullException.ThrowIfNull(question);
 
             for (int i = 0; i < _questions.Length; i++)
@@ -97,14 +114,18 @@ namespace ExaminationSystem
             }
 
             throw new InvalidOperationException("The questions array is full.");
-
         }
 
+        /// <summary>
+        /// Records the student's chosen answer for the question at <paramref name="questionIndex"/>.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The index or answer ID is invalid.</exception>
+        /// <exception cref="InvalidOperationException">There is no question at that index.</exception>
+        /// <exception cref="ArgumentException">The answer ID doesn't belong to that question.</exception>
         public void SetStudentAnswer(int questionIndex, int answerId)
         {
             if (answerId <= 0)
                 throw new ArgumentOutOfRangeException(nameof(answerId), "Answer ID must be greater than zero.");
-
 
             if (questionIndex < 0 || questionIndex >= _questions.Length)
             {
@@ -121,17 +142,24 @@ namespace ExaminationSystem
                 throw new ArgumentException("The specified answer does not belong to this question.", nameof(answerId));
 
             StudentAnswers[questionIndex] = answerId;
-
         }
 
+        /// <summary>
+        /// Displays the exam. Behavior differs per exam type — see the overriding
+        /// implementations in <see cref="FinalExam"/> and <see cref="PracticalExam"/>.
+        /// </summary>
         public abstract void ShowExam();
 
+        /// <inheritdoc/>
         public override string ToString()
         {
             return $"Exam - Time: {Time} minutes, Questions: {NumberOfQuestions}";
-
         }
 
+        /// <summary>
+        /// Creates a deep copy of this exam: the questions array (and each question
+        /// inside it) and the student answers array are cloned independently.
+        /// </summary>
         public object Clone()
         {
             Exam clone = (Exam)MemberwiseClone();
@@ -151,6 +179,9 @@ namespace ExaminationSystem
             return clone;
         }
 
+        /// <summary>
+        /// Compares exams by <see cref="NumberOfQuestions"/>.
+        /// </summary>
         public int CompareTo(object? obj)
         {
             if (obj is null)
